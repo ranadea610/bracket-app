@@ -1,48 +1,44 @@
 import { useState } from "react";
-import { SetupPanel } from "./components/SetupPanel";
-import { generateBracket } from "./generateBracket";
+import { Navbar } from "./components/Navbar";
+import { SingleElimSetup } from "./components/setup/SingleElimSetup";
+import { SeriesSetup } from "./components/setup/SeriesSetup";
+import { GroupKnockoutSetup } from "./components/setup/GroupKnockoutSetup";
 import { BracketView } from "./components/BracketView";
-import type { Bracket } from "./generateBracket";
+import { GroupStageView } from "./components/GroupStageView";
+import { generateTournament } from "./tournament/generate";
+import type { Tournament, TournamentConfig, TournamentFormat } from "./tournament/types";
 
 function App() {
   // =======================
   // STATE
   // =======================
 
-  const [bracketSize, setBracketSize] = useState<number | null>(null);
+  const [activeFormat, setActiveFormat] =
+    useState<TournamentFormat>("single-elim");
+  const [tournament, setTournament] = useState<Tournament | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [bracket, setBracket] = useState<Bracket | null>(null);
 
   // =======================
   // HANDLERS
   // =======================
 
-  const handleCreateBracket = (names: string[]) => {
-    if (!bracketSize) return;
-
-    // Validation
-    if (names.length !== bracketSize) {
-      setError(
-        `Expected ${bracketSize} names, but got ${names.length}. Please try again.`,
-      );
-      return;
-    }
-
-    // Clear errors
+  const handleSelectTab = (format: TournamentFormat) => {
+    setActiveFormat(format);
+    setTournament(null);
     setError(null);
+  };
 
-    // Generate bracket
-    const newBracket = generateBracket(bracketSize, names);
-
-    // Save to state
-    setBracket(newBracket);
-
-    console.log("Generated Bracket:", newBracket);
+  const handleCreate = (config: TournamentConfig) => {
+    try {
+      setError(null);
+      setTournament(generateTournament(config));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create tournament.");
+    }
   };
 
   const handleReset = () => {
-    setBracket(null);
-    setBracketSize(null);
+    setTournament(null);
     setError(null);
   };
 
@@ -51,50 +47,63 @@ function App() {
   // =======================
 
   return (
-    <div
-      style={{
-        padding: "24px",
-        maxWidth: "900px",
-        margin: "0 auto",
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <h1>Tournament Bracket Generator</h1>
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <Navbar active={activeFormat} onSelect={handleSelectTab} />
 
-      {/* =======================
-          SETUP MODE
-      ======================= */}
-      {!bracket && (
-        <SetupPanel
-          bracketSize={bracketSize}
-          setBracketSize={setBracketSize}
-          onCreateBracket={handleCreateBracket}
-          error={error}
-        />
-      )}
+      <main className="max-w-4xl mx-auto px-6 py-8">
+        {/* =======================
+            SETUP MODE
+        ======================= */}
+        {!tournament && (
+          <>
+            {activeFormat === "single-elim" && (
+              <SingleElimSetup
+                key={activeFormat}
+                onSubmit={handleCreate}
+                error={error}
+              />
+            )}
+            {activeFormat === "series-bracket" && (
+              <SeriesSetup
+                key={activeFormat}
+                onSubmit={handleCreate}
+                error={error}
+              />
+            )}
+            {activeFormat === "group-knockout" && (
+              <GroupKnockoutSetup
+                key={activeFormat}
+                onSubmit={handleCreate}
+                error={error}
+              />
+            )}
+          </>
+        )}
 
-      {/* =======================
-          BRACKET MODE (TEMP VIEW)
-      ======================= */}
-      {bracket && (
-        <div style={{ marginTop: "24px" }}>
-          <h2>Bracket Created ✅</h2>
+        {/* =======================
+            RESULT MODE
+        ======================= */}
+        {tournament && (
+          <div>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:border-indigo-400 transition-colors cursor-pointer"
+            >
+              Reset
+            </button>
 
-          <button onClick={handleReset} style={{ marginBottom: "16px" }}>
-            Reset
-          </button>
+            {(tournament.format === "single-elim" ||
+              tournament.format === "series-bracket") && (
+              <BracketView bracket={tournament.bracket} />
+            )}
 
-          {bracket && (
-            <div style={{ marginTop: "24px" }}>
-              <button onClick={handleReset} style={{ marginBottom: "16px" }}>
-                Reset
-              </button>
-
-              <BracketView bracket={bracket} />
-            </div>
-          )}
-        </div>
-      )}
+            {tournament.format === "group-knockout" && (
+              <GroupStageView groupStage={tournament.groupStage} />
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
