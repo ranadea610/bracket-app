@@ -10,6 +10,7 @@ export function generateSeriesBracket(config: SeriesConfig): SeriesTournament {
   return {
     id: crypto.randomUUID(),
     name: config.name,
+    description: config.description,
     createdAt: new Date().toISOString(),
     format: "series-bracket",
     bracket: { rounds },

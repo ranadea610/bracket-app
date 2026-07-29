@@ -12,7 +12,7 @@ import {
   toParticipants,
 } from "./shared";
 
-function groupName(index: number): string {
+export function groupName(index: number): string {
   // A, B, C, ... Z, AA, AB, ...
   let n = index;
   let name = "";
@@ -68,6 +68,7 @@ export function generateGroupKnockout(
   return {
     id: crypto.randomUUID(),
     name: config.name,
+    description: config.description,
     createdAt: new Date().toISOString(),
     format: "group-knockout",
     groupStage,

@@ -10,6 +10,7 @@ export function generateSingleElim(
   return {
     id: crypto.randomUUID(),
     name: config.name,
+    description: config.description,
     createdAt: new Date().toISOString(),
     format: "single-elim",
     bracket: { rounds },

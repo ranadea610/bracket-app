@@ -1,7 +1,12 @@
-import { useState } from "react";
-import { NumberSelector } from "../NumberSelector";
+import { useEffect, useState } from "react";
+import { NumberDropdown } from "../NumberDropdown";
 import { TournamentNameInput } from "../TournamentNameInput";
-import { ParticipantInput } from "../ParticipantInput";
+import { TournamentDescriptionInput } from "../TournamentDescriptionInput";
+import { ParticipantList } from "../participants/ParticipantList";
+import {
+  createParticipantSlots,
+  type ParticipantSlot,
+} from "../participants/slots";
 import type { SeriesConfig } from "../../tournament/types";
 
 const SIZES = [4, 8, 16, 32, 64, 128, 256];
@@ -13,54 +18,81 @@ type SeriesSetupProps = {
 };
 
 export function SeriesSetup({ onSubmit, error }: SeriesSetupProps) {
+  const [name, setName] = useState("");
   const [size, setSize] = useState<number | null>(null);
   const [bestOf, setBestOf] = useState<number | null>(null);
-  const [name, setName] = useState("");
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
+  const [participants, setParticipants] = useState<ParticipantSlot[]>([]);
 
-  const handleNames = (names: string[]) => {
-    if (!size || !bestOf) return;
+  const ready = Boolean(size && bestOf);
 
-    if (names.length !== size) {
-      setLocalError(
-        `Expected ${size} names, but got ${names.length}. Please try again.`,
-      );
-      return;
-    }
+  useEffect(() => {
+    setParticipants(size ? createParticipantSlots(size) : []);
+  }, [size]);
 
-    setLocalError(null);
+  const allNamed =
+    participants.length > 0 &&
+    participants.every((p) => p.name.trim().length > 0);
+
+  const handleCreate = () => {
+    if (!size || !bestOf || !allNamed) return;
+
     onSubmit({
       format: "series-bracket",
       name: name.trim() || "My Tournament",
-      participants: names,
+      description: description.trim() || undefined,
+      participants: participants.map((p) => p.name.trim()),
       bestOf,
     });
   };
 
   return (
     <div className="space-y-6">
-      <NumberSelector
+      <TournamentNameInput value={name} onChange={setName} />
+
+      <NumberDropdown
         label="Bracket size"
         options={SIZES}
         selected={size}
         onSelect={setSize}
       />
 
-      <NumberSelector
+      <NumberDropdown
         label="Series length (best of)"
         options={BEST_OF_OPTIONS}
         selected={bestOf}
         onSelect={setBestOf}
       />
 
-      <TournamentNameInput value={name} onChange={setName} />
+      {ready && (
+        <>
+          <ParticipantList
+            participants={participants}
+            onChange={setParticipants}
+          />
 
-      {size && bestOf && (
-        <ParticipantInput
-          expectedCount={size}
-          onSubmitNames={handleNames}
-          error={localError ?? error}
-        />
+          <TournamentDescriptionInput
+            value={description}
+            onChange={setDescription}
+          />
+
+          <div>
+            <button
+              type="button"
+              onClick={handleCreate}
+              disabled={!allNamed}
+              className="rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-indigo-500 cursor-pointer"
+            >
+              Create Bracket
+            </button>
+            {!allNamed && (
+              <p className="mt-2 text-sm text-slate-500">
+                Name every participant to continue
+              </p>
+            )}
+            {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+          </div>
+        </>
       )}
     </div>
   );

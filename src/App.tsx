@@ -85,13 +85,26 @@ function App() {
         ======================= */}
         {tournament && (
           <div>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:border-indigo-400 transition-colors cursor-pointer"
-            >
-              Reset
-            </button>
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-100">
+                  {tournament.name}
+                </h2>
+                {tournament.description && (
+                  <p className="mt-1 text-sm text-slate-400">
+                    {tournament.description}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleReset}
+                className="shrink-0 rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:border-indigo-400 transition-colors cursor-pointer"
+              >
+                Reset
+              </button>
+            </div>
 
             {(tournament.format === "single-elim" ||
               tournament.format === "series-bracket") && (

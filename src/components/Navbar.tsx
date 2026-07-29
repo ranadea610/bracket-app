@@ -14,12 +14,12 @@ const TABS: { format: TournamentFormat; label: string }[] = [
 export function Navbar({ active, onSelect }: NavbarProps) {
   return (
     <header className="border-b border-slate-800">
-      <div className="max-w-4xl mx-auto px-6 py-4">
-        <h1 className="text-xl font-semibold text-slate-100">
+      <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
+        <h1 className="text-xl font-semibold text-slate-100 whitespace-nowrap">
           Tournament Bracket Generator
         </h1>
 
-        <nav className="mt-4 flex gap-1">
+        <nav className="flex gap-1">
           {TABS.map((tab) => (
             <button
               key={tab.format}

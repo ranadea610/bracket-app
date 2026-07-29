@@ -55,6 +55,7 @@ export type GroupStage = {
 export type TournamentBase = {
   id: string;
   name: string;
+  description?: string;
   createdAt: string;
 };
 
@@ -81,6 +82,7 @@ export type Tournament =
 
 export type BaseConfig = {
   name: string;
+  description?: string;
   participants: string[];
 };
 
