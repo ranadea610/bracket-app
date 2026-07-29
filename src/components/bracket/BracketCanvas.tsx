@@ -1,5 +1,5 @@
 import { forwardRef, Fragment } from "react";
-import type { Round } from "../../tournament/types";
+import type { Participant, Round } from "../../tournament/types";
 import { RoundColumn } from "./RoundColumn";
 import { ConnectorLayer } from "./ConnectorLayer";
 import { getCanvasSize } from "./geometry";
@@ -8,10 +8,19 @@ type BracketCanvasProps = {
   rounds: Round[];
   scale: number;
   onSelectRound: (roundIndex: number) => void;
+  onSelectWinner: (
+    roundIndex: number,
+    matchIndex: number,
+    participant: Participant,
+  ) => void;
+  onOpenResultModal: (roundIndex: number, matchIndex: number) => void;
 };
 
 export const BracketCanvas = forwardRef<HTMLDivElement, BracketCanvasProps>(
-  function BracketCanvas({ rounds, scale, onSelectRound }, ref) {
+  function BracketCanvas(
+    { rounds, scale, onSelectRound, onSelectWinner, onOpenResultModal },
+    ref,
+  ) {
     const round0MatchCount = rounds[0]?.matches.length ?? 0;
     const { width, height } = getCanvasSize(rounds);
 
@@ -35,6 +44,8 @@ export const BracketCanvas = forwardRef<HTMLDivElement, BracketCanvasProps>(
                   round0MatchCount={round0MatchCount}
                   canvasHeight={height}
                   onSelectRound={onSelectRound}
+                  onSelectWinner={onSelectWinner}
+                  onOpenResultModal={onOpenResultModal}
                 />
                 {roundIndex < rounds.length - 1 && (
                   <ConnectorLayer

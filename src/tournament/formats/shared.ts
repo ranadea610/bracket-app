@@ -36,7 +36,6 @@ export function buildEliminationRounds(
       participant1: participants[i],
       participant2: participants[i + 1],
       bestOf: opts?.bestOf,
-      games: opts?.bestOf ? [] : undefined,
     });
   }
 
@@ -53,7 +52,6 @@ export function buildEliminationRounds(
       matches.push({
         id: crypto.randomUUID(),
         bestOf: opts?.bestOf,
-        games: opts?.bestOf ? [] : undefined,
       });
     }
 

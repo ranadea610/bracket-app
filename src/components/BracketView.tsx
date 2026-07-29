@@ -1,18 +1,29 @@
 import { useRef, useState } from "react";
-import type { EliminationBracket } from "../tournament/types";
+import type { EliminationBracket, Participant } from "../tournament/types";
 import { BracketCanvas } from "./bracket/BracketCanvas";
+import { MatchResultModal } from "./bracket/MatchResultModal";
 import { getCanvasSize, getRoundX, HEADER_HEIGHT, MATCH_WIDTH } from "./bracket/geometry";
 
 type BracketViewProps = {
   bracket: EliminationBracket;
+  onSetWinner: (
+    roundIndex: number,
+    matchIndex: number,
+    winner: Participant,
+    score?: { participant1: number; participant2: number },
+  ) => void;
 };
 
 const MIN_SCALE = 0.3;
 const MAX_SCALE = 2;
 
-export function BracketView({ bracket }: BracketViewProps) {
+export function BracketView({ bracket, onSetWinner }: BracketViewProps) {
   const [scale, setScale] = useState(1);
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
+  const [activeModal, setActiveModal] = useState<{
+    roundIndex: number;
+    matchIndex: number;
+  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const rounds = bracket.rounds;
@@ -125,7 +136,22 @@ export function BracketView({ bracket }: BracketViewProps) {
         rounds={rounds}
         scale={scale}
         onSelectRound={goToRound}
+        onSelectWinner={onSetWinner}
+        onOpenResultModal={(roundIndex, matchIndex) =>
+          setActiveModal({ roundIndex, matchIndex })
+        }
       />
+
+      {activeModal && (
+        <MatchResultModal
+          match={rounds[activeModal.roundIndex].matches[activeModal.matchIndex]}
+          onClose={() => setActiveModal(null)}
+          onSubmit={(winner, score) => {
+            onSetWinner(activeModal.roundIndex, activeModal.matchIndex, winner, score);
+            setActiveModal(null);
+          }}
+        />
+      )}
     </div>
   );
 }

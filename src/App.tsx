@@ -5,8 +5,15 @@ import { SeriesSetup } from "./components/setup/SeriesSetup";
 import { GroupKnockoutSetup } from "./components/setup/GroupKnockoutSetup";
 import { BracketView } from "./components/BracketView";
 import { GroupStageView } from "./components/GroupStageView";
+import { ChampionModal } from "./components/bracket/ChampionModal";
 import { generateTournament } from "./tournament/generate";
-import type { Tournament, TournamentConfig, TournamentFormat } from "./tournament/types";
+import { setMatchWinner } from "./tournament/advance";
+import type {
+  Participant,
+  Tournament,
+  TournamentConfig,
+  TournamentFormat,
+} from "./tournament/types";
 
 function App() {
   // =======================
@@ -17,6 +24,7 @@ function App() {
     useState<TournamentFormat>("single-elim");
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [champion, setChampion] = useState<Participant | null>(null);
 
   // =======================
   // HANDLERS
@@ -40,6 +48,40 @@ function App() {
   const handleReset = () => {
     setTournament(null);
     setError(null);
+  };
+
+  const handleSetWinner = (
+    roundIndex: number,
+    matchIndex: number,
+    winner: Participant,
+    score?: { participant1: number; participant2: number },
+  ) => {
+    if (
+      !tournament ||
+      (tournament.format !== "single-elim" &&
+        tournament.format !== "series-bracket")
+    ) {
+      return;
+    }
+
+    const hadChampionBefore = Boolean(
+      tournament.bracket.rounds.at(-1)?.matches[0]?.winner,
+    );
+
+    const newRounds = setMatchWinner(
+      tournament.bracket.rounds,
+      roundIndex,
+      matchIndex,
+      winner,
+      score,
+    );
+
+    setTournament({ ...tournament, bracket: { rounds: newRounds } });
+
+    const finalWinner = newRounds.at(-1)?.matches[0]?.winner;
+    if (!hadChampionBefore && finalWinner) {
+      setChampion(finalWinner);
+    }
   };
 
   // =======================
@@ -108,7 +150,10 @@ function App() {
 
             {(tournament.format === "single-elim" ||
               tournament.format === "series-bracket") && (
-              <BracketView bracket={tournament.bracket} />
+              <BracketView
+                bracket={tournament.bracket}
+                onSetWinner={handleSetWinner}
+              />
             )}
 
             {tournament.format === "group-knockout" && (
@@ -117,6 +162,10 @@ function App() {
           </div>
         )}
       </main>
+
+      {champion && (
+        <ChampionModal champion={champion} onClose={() => setChampion(null)} />
+      )}
     </div>
   );
 }

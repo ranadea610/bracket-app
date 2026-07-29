@@ -6,18 +6,14 @@ export type Participant = {
   seed?: number;
 };
 
-export type Game = {
-  winner?: Participant;
-};
-
 export type Match = {
   id: string;
   participant1?: Participant;
   participant2?: Participant;
   winner?: Participant;
+  score?: { participant1: number; participant2: number };
   // Only populated for series-bracket matches
   bestOf?: number;
-  games?: Game[];
 };
 
 export type Round = {
