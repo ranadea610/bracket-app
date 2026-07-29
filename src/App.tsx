@@ -8,7 +8,10 @@ import { GroupStageView } from "./components/GroupStageView";
 import { ChampionModal } from "./components/bracket/ChampionModal";
 import { generateTournament } from "./tournament/generate";
 import { setMatchWinner } from "./tournament/advance";
+import { recordGroupMatchResult } from "./tournament/groupStandings";
+import { generateKnockoutFromGroups } from "./tournament/formats/groupKnockout";
 import type {
+  EliminationBracket,
   Participant,
   Tournament,
   TournamentConfig,
@@ -56,31 +59,74 @@ function App() {
     winner: Participant,
     score?: { participant1: number; participant2: number },
   ) => {
-    if (
-      !tournament ||
-      (tournament.format !== "single-elim" &&
-        tournament.format !== "series-bracket")
-    ) {
-      return;
-    }
+    if (!tournament) return;
+
+    const bracket: EliminationBracket | null =
+      tournament.format === "single-elim" || tournament.format === "series-bracket"
+        ? tournament.bracket
+        : tournament.format === "group-knockout"
+          ? tournament.knockout
+          : null;
+
+    if (!bracket) return;
 
     const hadChampionBefore = Boolean(
-      tournament.bracket.rounds.at(-1)?.matches[0]?.winner,
+      bracket.rounds.at(-1)?.matches[0]?.winner,
     );
 
     const newRounds = setMatchWinner(
-      tournament.bracket.rounds,
+      bracket.rounds,
       roundIndex,
       matchIndex,
       winner,
       score,
     );
 
-    setTournament({ ...tournament, bracket: { rounds: newRounds } });
+    if (tournament.format === "group-knockout") {
+      setTournament({ ...tournament, knockout: { rounds: newRounds } });
+    } else {
+      setTournament({ ...tournament, bracket: { rounds: newRounds } });
+    }
 
     const finalWinner = newRounds.at(-1)?.matches[0]?.winner;
     if (!hadChampionBefore && finalWinner) {
       setChampion(finalWinner);
+    }
+  };
+
+  const handleRecordGroupMatch = (
+    groupIndex: number,
+    matchIndex: number,
+    score: { participant1: number; participant2: number },
+  ) => {
+    if (!tournament || tournament.format !== "group-knockout") return;
+
+    const groups = tournament.groupStage.groups.map((group, i) =>
+      i === groupIndex
+        ? recordGroupMatchResult(group, matchIndex, score)
+        : group,
+    );
+
+    setTournament({
+      ...tournament,
+      groupStage: { ...tournament.groupStage, groups },
+    });
+  };
+
+  const handleCreateKnockout = () => {
+    if (
+      !tournament ||
+      tournament.format !== "group-knockout" ||
+      tournament.knockout
+    ) {
+      return;
+    }
+
+    try {
+      const knockout = generateKnockoutFromGroups(tournament.groupStage);
+      setTournament({ ...tournament, knockout });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create knockout bracket.");
     }
   };
 
@@ -157,7 +203,21 @@ function App() {
             )}
 
             {tournament.format === "group-knockout" && (
-              <GroupStageView groupStage={tournament.groupStage} />
+              <>
+                <GroupStageView
+                  groupStage={tournament.groupStage}
+                  onRecordMatch={handleRecordGroupMatch}
+                  onCreateKnockout={handleCreateKnockout}
+                  knockoutCreated={Boolean(tournament.knockout)}
+                />
+
+                {tournament.knockout && (
+                  <BracketView
+                    bracket={tournament.knockout}
+                    onSetWinner={handleSetWinner}
+                  />
+                )}
+              </>
             )}
           </div>
         )}

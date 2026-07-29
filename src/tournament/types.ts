@@ -33,6 +33,8 @@ export type GroupStanding = {
   losses: number;
   draws: number;
   points: number;
+  goalsFor: number;
+  goalsAgainst: number;
 };
 
 export type Group = {
