@@ -10,7 +10,7 @@ type MatchCardProps = {
 export function MatchCard({ match, top, left }: MatchCardProps) {
   return (
     <div
-      className="absolute rounded-lg border border-slate-700 bg-slate-800/50 p-3"
+      className="absolute flex flex-col justify-center overflow-hidden rounded-lg border border-slate-700 bg-slate-800/50 p-3"
       style={{
         top,
         left,
@@ -19,7 +19,7 @@ export function MatchCard({ match, top, left }: MatchCardProps) {
       }}
     >
       {match.bestOf && (
-        <div className="mb-1.5 inline-block rounded bg-slate-700 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-300">
+        <div className="mb-1.5 self-start rounded bg-slate-700 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-300">
           Bo{match.bestOf}
         </div>
       )}

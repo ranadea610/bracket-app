@@ -1,7 +1,9 @@
 import type { Round } from "../../tournament/types";
 
 export const MATCH_WIDTH = 200;
-export const MATCH_HEIGHT = 72;
+// Tall enough to fit two participant names plus the optional "BoN" badge
+// line without overflowing the card (see MatchCard.tsx).
+export const MATCH_HEIGHT = 92;
 export const COLUMN_GAP = 64;
 export const HEADER_HEIGHT = 40;
 // Vertical spacing between round-0 match centers.
