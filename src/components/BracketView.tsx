@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { EliminationBracket, Participant } from "../tournament/types";
 import { BracketCanvas } from "./bracket/BracketCanvas";
 import { MatchResultModal } from "./bracket/MatchResultModal";
+import { SeriesResultModal } from "./bracket/SeriesResultModal";
 import { getCanvasSize, getRoundX, HEADER_HEIGHT, MATCH_WIDTH } from "./bracket/geometry";
 
 type BracketViewProps = {
@@ -142,16 +143,32 @@ export function BracketView({ bracket, onSetWinner }: BracketViewProps) {
         }
       />
 
-      {activeModal && (
-        <MatchResultModal
-          match={rounds[activeModal.roundIndex].matches[activeModal.matchIndex]}
-          onClose={() => setActiveModal(null)}
-          onSubmit={(winner, score) => {
+      {activeModal &&
+        (() => {
+          const match =
+            rounds[activeModal.roundIndex].matches[activeModal.matchIndex];
+          const handleSubmit = (
+            winner: Participant,
+            score: { participant1: number; participant2: number },
+          ) => {
             onSetWinner(activeModal.roundIndex, activeModal.matchIndex, winner, score);
             setActiveModal(null);
-          }}
-        />
-      )}
+          };
+
+          return match.bestOf ? (
+            <SeriesResultModal
+              match={match}
+              onClose={() => setActiveModal(null)}
+              onSubmit={handleSubmit}
+            />
+          ) : (
+            <MatchResultModal
+              match={match}
+              onClose={() => setActiveModal(null)}
+              onSubmit={handleSubmit}
+            />
+          );
+        })()}
     </div>
   );
 }
