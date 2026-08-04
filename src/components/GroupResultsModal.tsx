@@ -1,5 +1,6 @@
 import type { Group } from "../tournament/types";
 import { Modal } from "./Modal";
+import { ScoreInput } from "./ScoreInput";
 
 type GroupResultsModalProps = {
   group: Group;
@@ -22,13 +23,12 @@ export function GroupResultsModal({
   const handleScoreChange = (
     matchIndex: number,
     side: "participant1" | "participant2",
-    value: string,
+    value: number,
   ) => {
     const match = group.matches[matchIndex];
     const current = match.score ?? { participant1: 0, participant2: 0 };
-    const parsed = value === "" ? 0 : Number(value);
 
-    onSaveMatch(matchIndex, { ...current, [side]: parsed });
+    onSaveMatch(matchIndex, { ...current, [side]: value });
   };
 
   return (
@@ -46,22 +46,18 @@ export function GroupResultsModal({
             <span className="flex-1 truncate text-sm text-slate-100">
               {match.participant1?.name}
             </span>
-            <input
-              type="number"
-              value={match.score?.participant1 ?? ""}
-              onChange={(e) =>
-                handleScoreChange(matchIndex, "participant1", e.target.value)
+            <ScoreInput
+              value={match.score?.participant1 ?? 0}
+              onChange={(value) =>
+                handleScoreChange(matchIndex, "participant1", value)
               }
-              className="w-14 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-center text-sm text-slate-100 outline-none focus:border-indigo-400"
             />
             <span className="text-slate-500">–</span>
-            <input
-              type="number"
-              value={match.score?.participant2 ?? ""}
-              onChange={(e) =>
-                handleScoreChange(matchIndex, "participant2", e.target.value)
+            <ScoreInput
+              value={match.score?.participant2 ?? 0}
+              onChange={(value) =>
+                handleScoreChange(matchIndex, "participant2", value)
               }
-              className="w-14 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-center text-sm text-slate-100 outline-none focus:border-indigo-400"
             />
             <span className="flex-1 truncate text-right text-sm text-slate-100">
               {match.participant2?.name}

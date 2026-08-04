@@ -137,7 +137,6 @@ export function BracketView({ bracket, onSetWinner }: BracketViewProps) {
         rounds={rounds}
         scale={scale}
         onSelectRound={goToRound}
-        onSelectWinner={onSetWinner}
         onOpenResultModal={(roundIndex, matchIndex) =>
           setActiveModal({ roundIndex, matchIndex })
         }

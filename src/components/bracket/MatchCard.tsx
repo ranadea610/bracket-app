@@ -5,17 +5,10 @@ type MatchCardProps = {
   match: Match;
   top: number;
   left: number;
-  onSelectWinner?: (participant: Participant) => void;
   onOpenResultModal?: () => void;
 };
 
-export function MatchCard({
-  match,
-  top,
-  left,
-  onSelectWinner,
-  onOpenResultModal,
-}: MatchCardProps) {
+export function MatchCard({ match, top, left, onOpenResultModal }: MatchCardProps) {
   const ready = Boolean(match.participant1 && match.participant2);
 
   const nameClass = (participant?: Participant) => {
@@ -24,6 +17,15 @@ export function MatchCard({
       ? "text-slate-100 font-semibold"
       : "text-slate-500 line-through";
   };
+
+  const row = (participant: Participant | undefined, score: number | undefined) => (
+    <div className={`flex items-center justify-between gap-2 text-sm ${nameClass(participant)}`}>
+      <span className="truncate">{participant?.name || "TBD"}</span>
+      {score !== undefined && (
+        <span className="shrink-0 text-slate-300">{score}</span>
+      )}
+    </div>
+  );
 
   return (
     <div
@@ -43,32 +45,8 @@ export function MatchCard({
           Bo{match.bestOf}
         </div>
       )}
-      <button
-        type="button"
-        disabled={!ready}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (match.participant1) onSelectWinner?.(match.participant1);
-        }}
-        className={`block w-full truncate border-0 bg-transparent p-0 text-left text-sm ${nameClass(match.participant1)} ${
-          ready ? "cursor-pointer hover:text-indigo-400" : "cursor-default"
-        }`}
-      >
-        {match.participant1?.name || "TBD"}
-      </button>
-      <button
-        type="button"
-        disabled={!ready}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (match.participant2) onSelectWinner?.(match.participant2);
-        }}
-        className={`block w-full truncate border-0 bg-transparent p-0 text-left text-sm ${nameClass(match.participant2)} ${
-          ready ? "cursor-pointer hover:text-indigo-400" : "cursor-default"
-        }`}
-      >
-        {match.participant2?.name || "TBD"}
-      </button>
+      {row(match.participant1, match.score?.participant1)}
+      {row(match.participant2, match.score?.participant2)}
     </div>
   );
 }

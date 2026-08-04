@@ -1,4 +1,4 @@
-import type { Participant, Round } from "../../tournament/types";
+import type { Round } from "../../tournament/types";
 import { MatchCard } from "./MatchCard";
 import {
   getMatchCenterY,
@@ -14,11 +14,6 @@ type RoundColumnProps = {
   round0MatchCount: number;
   canvasHeight: number;
   onSelectRound: (roundIndex: number) => void;
-  onSelectWinner: (
-    roundIndex: number,
-    matchIndex: number,
-    participant: Participant,
-  ) => void;
   onOpenResultModal: (roundIndex: number, matchIndex: number) => void;
 };
 
@@ -28,7 +23,6 @@ export function RoundColumn({
   round0MatchCount,
   canvasHeight,
   onSelectRound,
-  onSelectWinner,
   onOpenResultModal,
 }: RoundColumnProps) {
   return (
@@ -58,9 +52,6 @@ export function RoundColumn({
             match={match}
             left={0}
             top={HEADER_HEIGHT + centerY - MATCH_HEIGHT / 2}
-            onSelectWinner={(participant) =>
-              onSelectWinner(roundIndex, matchIndex, participant)
-            }
             onOpenResultModal={() => onOpenResultModal(roundIndex, matchIndex)}
           />
         );

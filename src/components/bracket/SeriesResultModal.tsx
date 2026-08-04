@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Match, Participant } from "../../tournament/types";
 import { Modal } from "../Modal";
+import { ScoreInput } from "../ScoreInput";
 
 type GameScore = { participant1: number; participant2: number };
 
@@ -56,11 +57,10 @@ export function SeriesResultModal({
   const handleScoreChange = (
     gameIndex: number,
     side: "participant1" | "participant2",
-    value: string,
+    value: number,
   ) => {
     const current = games[gameIndex] ?? { participant1: 0, participant2: 0 };
-    const parsed = value === "" ? 0 : Number(value);
-    const updated = { ...current, [side]: parsed };
+    const updated = { ...current, [side]: value };
 
     const next = games.map((g, i) => (i === gameIndex ? updated : g));
     const { decidedAt: newDecidedAt } = tallyGames(next, requiredWins);
@@ -105,22 +105,18 @@ export function SeriesResultModal({
               <span className="flex-1 truncate text-sm text-slate-100">
                 {participant1.name}
               </span>
-              <input
-                type="number"
-                value={game?.participant1 ?? ""}
-                onChange={(e) =>
-                  handleScoreChange(gameIndex, "participant1", e.target.value)
+              <ScoreInput
+                value={game?.participant1 ?? 0}
+                onChange={(value) =>
+                  handleScoreChange(gameIndex, "participant1", value)
                 }
-                className="w-14 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-center text-sm text-slate-100 outline-none focus:border-indigo-400"
               />
               <span className="text-slate-500">–</span>
-              <input
-                type="number"
-                value={game?.participant2 ?? ""}
-                onChange={(e) =>
-                  handleScoreChange(gameIndex, "participant2", e.target.value)
+              <ScoreInput
+                value={game?.participant2 ?? 0}
+                onChange={(value) =>
+                  handleScoreChange(gameIndex, "participant2", value)
                 }
-                className="w-14 rounded-md border border-slate-700 bg-slate-900 px-2 py-1 text-center text-sm text-slate-100 outline-none focus:border-indigo-400"
               />
               <span className="flex-1 truncate text-right text-sm text-slate-100">
                 {participant2.name}
