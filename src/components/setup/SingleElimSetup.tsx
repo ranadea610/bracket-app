@@ -1,30 +1,27 @@
-import { useEffect, useState } from "react";
 import { NumberDropdown } from "../NumberDropdown";
 import { TournamentNameInput } from "../TournamentNameInput";
 import { TournamentDescriptionInput } from "../TournamentDescriptionInput";
 import { ParticipantList } from "../participants/ParticipantList";
-import {
-  createParticipantSlots,
-  type ParticipantSlot,
-} from "../participants/slots";
+import { createParticipantSlots } from "../participants/slots";
 import type { SingleElimConfig } from "../../tournament/types";
+import type { SingleElimDraft } from "./draftTypes";
 
 const SIZES = [4, 8, 16, 32, 64, 128, 256];
 
 type SingleElimSetupProps = {
+  draft: SingleElimDraft;
+  onDraftChange: (draft: SingleElimDraft) => void;
   onSubmit: (config: SingleElimConfig) => void;
   error: string | null;
 };
 
-export function SingleElimSetup({ onSubmit, error }: SingleElimSetupProps) {
-  const [name, setName] = useState("");
-  const [size, setSize] = useState<number | null>(null);
-  const [description, setDescription] = useState("");
-  const [participants, setParticipants] = useState<ParticipantSlot[]>([]);
-
-  useEffect(() => {
-    setParticipants(size ? createParticipantSlots(size) : []);
-  }, [size]);
+export function SingleElimSetup({
+  draft,
+  onDraftChange,
+  onSubmit,
+  error,
+}: SingleElimSetupProps) {
+  const { name, size, description, participants } = draft;
 
   const allNamed =
     participants.length > 0 &&
@@ -43,25 +40,30 @@ export function SingleElimSetup({ onSubmit, error }: SingleElimSetupProps) {
 
   return (
     <div className="space-y-6">
-      <TournamentNameInput value={name} onChange={setName} />
+      <TournamentNameInput
+        value={name}
+        onChange={(name) => onDraftChange({ ...draft, name })}
+      />
 
       <NumberDropdown
         label="Bracket size"
         options={SIZES}
         selected={size}
-        onSelect={setSize}
+        onSelect={(size) =>
+          onDraftChange({ ...draft, size, participants: createParticipantSlots(size) })
+        }
       />
 
       {size && (
         <>
           <ParticipantList
             participants={participants}
-            onChange={setParticipants}
+            onChange={(participants) => onDraftChange({ ...draft, participants })}
           />
 
           <TournamentDescriptionInput
             value={description}
-            onChange={setDescription}
+            onChange={(description) => onDraftChange({ ...draft, description })}
           />
 
           <div>

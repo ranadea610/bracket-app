@@ -1,34 +1,29 @@
-import { useEffect, useState } from "react";
 import { NumberDropdown } from "../NumberDropdown";
 import { TournamentNameInput } from "../TournamentNameInput";
 import { TournamentDescriptionInput } from "../TournamentDescriptionInput";
 import { ParticipantList } from "../participants/ParticipantList";
-import {
-  createParticipantSlots,
-  type ParticipantSlot,
-} from "../participants/slots";
+import { createParticipantSlots } from "../participants/slots";
 import type { SeriesConfig } from "../../tournament/types";
+import type { SeriesDraft } from "./draftTypes";
 
 const SIZES = [4, 8, 16, 32, 64, 128, 256];
 const BEST_OF_OPTIONS = [3, 5, 7];
 
 type SeriesSetupProps = {
+  draft: SeriesDraft;
+  onDraftChange: (draft: SeriesDraft) => void;
   onSubmit: (config: SeriesConfig) => void;
   error: string | null;
 };
 
-export function SeriesSetup({ onSubmit, error }: SeriesSetupProps) {
-  const [name, setName] = useState("");
-  const [size, setSize] = useState<number | null>(null);
-  const [bestOf, setBestOf] = useState<number | null>(null);
-  const [description, setDescription] = useState("");
-  const [participants, setParticipants] = useState<ParticipantSlot[]>([]);
-
+export function SeriesSetup({
+  draft,
+  onDraftChange,
+  onSubmit,
+  error,
+}: SeriesSetupProps) {
+  const { name, size, bestOf, description, participants } = draft;
   const ready = Boolean(size && bestOf);
-
-  useEffect(() => {
-    setParticipants(size ? createParticipantSlots(size) : []);
-  }, [size]);
 
   const allNamed =
     participants.length > 0 &&
@@ -48,32 +43,37 @@ export function SeriesSetup({ onSubmit, error }: SeriesSetupProps) {
 
   return (
     <div className="space-y-6">
-      <TournamentNameInput value={name} onChange={setName} />
+      <TournamentNameInput
+        value={name}
+        onChange={(name) => onDraftChange({ ...draft, name })}
+      />
 
       <NumberDropdown
         label="Bracket size"
         options={SIZES}
         selected={size}
-        onSelect={setSize}
+        onSelect={(size) =>
+          onDraftChange({ ...draft, size, participants: createParticipantSlots(size) })
+        }
       />
 
       <NumberDropdown
         label="Series length (best of)"
         options={BEST_OF_OPTIONS}
         selected={bestOf}
-        onSelect={setBestOf}
+        onSelect={(bestOf) => onDraftChange({ ...draft, bestOf })}
       />
 
       {ready && (
         <>
           <ParticipantList
             participants={participants}
-            onChange={setParticipants}
+            onChange={(participants) => onDraftChange({ ...draft, participants })}
           />
 
           <TournamentDescriptionInput
             value={description}
-            onChange={setDescription}
+            onChange={(description) => onDraftChange({ ...draft, description })}
           />
 
           <div>

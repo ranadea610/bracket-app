@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { NumberDropdown } from "../NumberDropdown";
 import { TournamentNameInput } from "../TournamentNameInput";
 import { TournamentDescriptionInput } from "../TournamentDescriptionInput";
@@ -9,45 +8,44 @@ import {
 import { createParticipantSlots } from "../participants/slots";
 import type { GroupKnockoutConfig } from "../../tournament/types";
 import { groupName } from "../../tournament/formats/groupKnockout";
+import type { GroupKnockoutDraft } from "./draftTypes";
 
 const NUM_GROUPS_OPTIONS = [2, 4, 8];
 const GROUP_SIZE_OPTIONS = [3, 4, 5, 6];
 const ADVANCE_OPTIONS = [1, 2];
 
 type GroupKnockoutSetupProps = {
+  draft: GroupKnockoutDraft;
+  onDraftChange: (draft: GroupKnockoutDraft) => void;
   onSubmit: (config: GroupKnockoutConfig) => void;
   error: string | null;
 };
 
+function buildGroups(
+  numGroups: number | null,
+  groupSize: number | null,
+): ParticipantGroup[] {
+  if (!numGroups || !groupSize) return [];
+
+  return Array.from({ length: numGroups }, (_, i) => ({
+    id: crypto.randomUUID(),
+    label: groupName(i),
+    participants: createParticipantSlots(groupSize),
+  }));
+}
+
 export function GroupKnockoutSetup({
+  draft,
+  onDraftChange,
   onSubmit,
   error,
 }: GroupKnockoutSetupProps) {
-  const [name, setName] = useState("");
-  const [numGroups, setNumGroups] = useState<number | null>(null);
-  const [groupSize, setGroupSize] = useState<number | null>(null);
-  const [advancePerGroup, setAdvancePerGroup] = useState<number | null>(null);
-  const [description, setDescription] = useState("");
-  const [groups, setGroups] = useState<ParticipantGroup[]>([]);
+  const { name, numGroups, groupSize, advancePerGroup, description, groups } =
+    draft;
 
   const ready = Boolean(numGroups && groupSize && advancePerGroup);
   const totalParticipants =
     numGroups && groupSize ? numGroups * groupSize : null;
-
-  useEffect(() => {
-    if (!numGroups || !groupSize) {
-      setGroups([]);
-      return;
-    }
-
-    setGroups(
-      Array.from({ length: numGroups }, (_, i) => ({
-        id: crypto.randomUUID(),
-        label: groupName(i),
-        participants: createParticipantSlots(groupSize),
-      })),
-    );
-  }, [numGroups, groupSize]);
 
   const allNamed =
     groups.length > 0 &&
@@ -74,27 +72,44 @@ export function GroupKnockoutSetup({
 
   return (
     <div className="space-y-6">
-      <TournamentNameInput value={name} onChange={setName} />
+      <TournamentNameInput
+        value={name}
+        onChange={(name) => onDraftChange({ ...draft, name })}
+      />
 
       <NumberDropdown
         label="Number of groups"
         options={NUM_GROUPS_OPTIONS}
         selected={numGroups}
-        onSelect={setNumGroups}
+        onSelect={(numGroups) =>
+          onDraftChange({
+            ...draft,
+            numGroups,
+            groups: buildGroups(numGroups, groupSize),
+          })
+        }
       />
 
       <NumberDropdown
         label="Participants per group"
         options={GROUP_SIZE_OPTIONS}
         selected={groupSize}
-        onSelect={setGroupSize}
+        onSelect={(groupSize) =>
+          onDraftChange({
+            ...draft,
+            groupSize,
+            groups: buildGroups(numGroups, groupSize),
+          })
+        }
       />
 
       <NumberDropdown
         label="Advance per group to knockout stage"
         options={ADVANCE_OPTIONS}
         selected={advancePerGroup}
-        onSelect={setAdvancePerGroup}
+        onSelect={(advancePerGroup) =>
+          onDraftChange({ ...draft, advancePerGroup })
+        }
       />
 
       {ready && (
@@ -105,11 +120,14 @@ export function GroupKnockoutSetup({
             </p>
           )}
 
-          <GroupedParticipantList groups={groups} onChange={setGroups} />
+          <GroupedParticipantList
+            groups={groups}
+            onChange={(groups) => onDraftChange({ ...draft, groups })}
+          />
 
           <TournamentDescriptionInput
             value={description}
-            onChange={setDescription}
+            onChange={(description) => onDraftChange({ ...draft, description })}
           />
 
           <div>

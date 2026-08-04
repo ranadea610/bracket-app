@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navbar } from "./components/Navbar";
 import { SingleElimSetup } from "./components/setup/SingleElimSetup";
 import { SeriesSetup } from "./components/setup/SeriesSetup";
 import { GroupKnockoutSetup } from "./components/setup/GroupKnockoutSetup";
 import { DoubleElimSetup } from "./components/setup/DoubleElimSetup";
+import { createEmptyDraft, type Draft } from "./components/setup/draftTypes";
 import { BracketView } from "./components/BracketView";
 import { GroupStageView } from "./components/GroupStageView";
 import { ChampionModal } from "./components/bracket/ChampionModal";
@@ -16,6 +17,7 @@ import {
   setDoubleElimWinner,
   type DoubleElimBracketKind,
 } from "./tournament/doubleElimAdvance";
+import { loadPersistedState, savePersistedState } from "./persistence";
 import type {
   EliminationBracket,
   Participant,
@@ -29,17 +31,26 @@ function App() {
   // STATE
   // =======================
 
-  const [activeFormat, setActiveFormat] =
-    useState<TournamentFormat>("single-elim");
+  const [persisted] = useState(() => loadPersistedState());
+
+  const [activeFormat, setActiveFormat] = useState<TournamentFormat>(
+    persisted?.activeFormat ?? "single-elim",
+  );
   // Keyed by format, so each tab keeps its own created tournament (if any)
   // independently of which tab is currently active.
   const [tournaments, setTournaments] = useState<
     Partial<Record<TournamentFormat, Tournament>>
-  >({});
+  >(persisted?.tournaments ?? {});
+  // Keyed by format too, so an in-progress (not yet created) setup form
+  // survives switching tabs and reloading the page.
+  const [drafts, setDrafts] = useState<Partial<Record<TournamentFormat, Draft>>>(
+    persisted?.drafts ?? {},
+  );
   const [error, setError] = useState<string | null>(null);
   const [champion, setChampion] = useState<Participant | null>(null);
 
   const tournament = tournaments[activeFormat] ?? null;
+  const draft = drafts[activeFormat] ?? createEmptyDraft(activeFormat);
 
   const setTournament = (next: Tournament | null) => {
     setTournaments((prev) => {
@@ -52,6 +63,14 @@ function App() {
       return updated;
     });
   };
+
+  const setDraft = (next: Draft) => {
+    setDrafts((prev) => ({ ...prev, [activeFormat]: next }));
+  };
+
+  useEffect(() => {
+    savePersistedState({ activeFormat, tournaments, drafts });
+  }, [activeFormat, tournaments, drafts]);
 
   // =======================
   // HANDLERS
@@ -67,6 +86,7 @@ function App() {
     try {
       setError(null);
       setTournament(generateTournament(config));
+      setDraft(createEmptyDraft(activeFormat));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create tournament.");
     }
@@ -204,30 +224,34 @@ function App() {
         ======================= */}
         {!tournament && (
           <>
-            {activeFormat === "single-elim" && (
+            {draft.format === "single-elim" && (
               <SingleElimSetup
-                key={activeFormat}
+                draft={draft}
+                onDraftChange={setDraft}
                 onSubmit={handleCreate}
                 error={error}
               />
             )}
-            {activeFormat === "series-bracket" && (
+            {draft.format === "series-bracket" && (
               <SeriesSetup
-                key={activeFormat}
+                draft={draft}
+                onDraftChange={setDraft}
                 onSubmit={handleCreate}
                 error={error}
               />
             )}
-            {activeFormat === "group-knockout" && (
+            {draft.format === "group-knockout" && (
               <GroupKnockoutSetup
-                key={activeFormat}
+                draft={draft}
+                onDraftChange={setDraft}
                 onSubmit={handleCreate}
                 error={error}
               />
             )}
-            {activeFormat === "double-elim" && (
+            {draft.format === "double-elim" && (
               <DoubleElimSetup
-                key={activeFormat}
+                draft={draft}
+                onDraftChange={setDraft}
                 onSubmit={handleCreate}
                 error={error}
               />
