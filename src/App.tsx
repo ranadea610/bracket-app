@@ -3,6 +3,7 @@ import { Navbar } from "./components/Navbar";
 import { SingleElimSetup } from "./components/setup/SingleElimSetup";
 import { SeriesSetup } from "./components/setup/SeriesSetup";
 import { GroupKnockoutSetup } from "./components/setup/GroupKnockoutSetup";
+import { DoubleElimSetup } from "./components/setup/DoubleElimSetup";
 import { BracketView } from "./components/BracketView";
 import { GroupStageView } from "./components/GroupStageView";
 import { ChampionModal } from "./components/bracket/ChampionModal";
@@ -10,6 +11,11 @@ import { generateTournament } from "./tournament/generate";
 import { setMatchWinner } from "./tournament/advance";
 import { recordGroupMatchResult } from "./tournament/groupStandings";
 import { generateKnockoutFromGroups } from "./tournament/formats/groupKnockout";
+import {
+  getChampion as getDoubleElimChampion,
+  setDoubleElimWinner,
+  type DoubleElimBracketKind,
+} from "./tournament/doubleElimAdvance";
 import type {
   EliminationBracket,
   Participant,
@@ -25,9 +31,27 @@ function App() {
 
   const [activeFormat, setActiveFormat] =
     useState<TournamentFormat>("single-elim");
-  const [tournament, setTournament] = useState<Tournament | null>(null);
+  // Keyed by format, so each tab keeps its own created tournament (if any)
+  // independently of which tab is currently active.
+  const [tournaments, setTournaments] = useState<
+    Partial<Record<TournamentFormat, Tournament>>
+  >({});
   const [error, setError] = useState<string | null>(null);
   const [champion, setChampion] = useState<Participant | null>(null);
+
+  const tournament = tournaments[activeFormat] ?? null;
+
+  const setTournament = (next: Tournament | null) => {
+    setTournaments((prev) => {
+      const updated = { ...prev };
+      if (next === null) {
+        delete updated[activeFormat];
+      } else {
+        updated[activeFormat] = next;
+      }
+      return updated;
+    });
+  };
 
   // =======================
   // HANDLERS
@@ -35,8 +59,8 @@ function App() {
 
   const handleSelectTab = (format: TournamentFormat) => {
     setActiveFormat(format);
-    setTournament(null);
     setError(null);
+    setChampion(null);
   };
 
   const handleCreate = (config: TournamentConfig) => {
@@ -59,14 +83,12 @@ function App() {
     winner: Participant,
     score?: { participant1: number; participant2: number },
   ) => {
-    if (!tournament) return;
+    if (!tournament || tournament.format === "double-elim") return;
 
     const bracket: EliminationBracket | null =
       tournament.format === "single-elim" || tournament.format === "series-bracket"
         ? tournament.bracket
-        : tournament.format === "group-knockout"
-          ? tournament.knockout
-          : null;
+        : tournament.knockout;
 
     if (!bracket) return;
 
@@ -130,6 +152,44 @@ function App() {
     }
   };
 
+  const handleSetDoubleElimWinner = (
+    bracketKind: DoubleElimBracketKind,
+    roundIndex: number,
+    matchIndex: number,
+    winner: Participant,
+    score?: { participant1: number; participant2: number },
+  ) => {
+    if (!tournament || tournament.format !== "double-elim") return;
+
+    const hadChampionBefore = Boolean(
+      getDoubleElimChampion(tournament.grandFinals.rounds),
+    );
+
+    const result = setDoubleElimWinner(
+      {
+        winnersRounds: tournament.winnersBracket.rounds,
+        losersRounds: tournament.losersBracket.rounds,
+        grandFinalsRounds: tournament.grandFinals.rounds,
+      },
+      bracketKind,
+      roundIndex,
+      matchIndex,
+      winner,
+      score,
+    );
+
+    setTournament({
+      ...tournament,
+      winnersBracket: { rounds: result.winnersRounds },
+      losersBracket: { rounds: result.losersRounds },
+      grandFinals: { rounds: result.grandFinalsRounds },
+    });
+
+    if (!hadChampionBefore && result.champion) {
+      setChampion(result.champion);
+    }
+  };
+
   // =======================
   // RENDER
   // =======================
@@ -160,6 +220,13 @@ function App() {
             )}
             {activeFormat === "group-knockout" && (
               <GroupKnockoutSetup
+                key={activeFormat}
+                onSubmit={handleCreate}
+                error={error}
+              />
+            )}
+            {activeFormat === "double-elim" && (
+              <DoubleElimSetup
                 key={activeFormat}
                 onSubmit={handleCreate}
                 error={error}
@@ -217,6 +284,58 @@ function App() {
                     onSetWinner={handleSetWinner}
                   />
                 )}
+              </>
+            )}
+
+            {tournament.format === "double-elim" && (
+              <>
+                <h3 className="text-lg font-semibold text-slate-100 mt-6 mb-1">
+                  Winners Bracket
+                </h3>
+                <BracketView
+                  bracket={tournament.winnersBracket}
+                  onSetWinner={(roundIndex, matchIndex, winner, score) =>
+                    handleSetDoubleElimWinner(
+                      "winners",
+                      roundIndex,
+                      matchIndex,
+                      winner,
+                      score,
+                    )
+                  }
+                />
+
+                <h3 className="text-lg font-semibold text-slate-100 mt-6 mb-1">
+                  Losers Bracket
+                </h3>
+                <BracketView
+                  bracket={tournament.losersBracket}
+                  onSetWinner={(roundIndex, matchIndex, winner, score) =>
+                    handleSetDoubleElimWinner(
+                      "losers",
+                      roundIndex,
+                      matchIndex,
+                      winner,
+                      score,
+                    )
+                  }
+                />
+
+                <h3 className="text-lg font-semibold text-slate-100 mt-6 mb-1">
+                  Grand Finals
+                </h3>
+                <BracketView
+                  bracket={tournament.grandFinals}
+                  onSetWinner={(roundIndex, matchIndex, winner, score) =>
+                    handleSetDoubleElimWinner(
+                      "grandFinals",
+                      roundIndex,
+                      matchIndex,
+                      winner,
+                      score,
+                    )
+                  }
+                />
               </>
             )}
           </div>

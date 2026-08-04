@@ -7,7 +7,7 @@ import type { Participant, Round } from "./types";
  * it, its own winner/score are cleared too, which then affects the next
  * round's recompute, and so on.
  */
-function propagateAdvancement(rounds: Round[]): Round[] {
+export function propagateAdvancement(rounds: Round[]): Round[] {
   for (let r = 1; r < rounds.length; r++) {
     const prevMatches = rounds[r - 1].matches;
     const matches = rounds[r].matches;

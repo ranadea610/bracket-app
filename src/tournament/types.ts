@@ -1,4 +1,8 @@
-export type TournamentFormat = "single-elim" | "series-bracket" | "group-knockout";
+export type TournamentFormat =
+  | "single-elim"
+  | "series-bracket"
+  | "group-knockout"
+  | "double-elim";
 
 export type Participant = {
   id: string;
@@ -73,10 +77,18 @@ export type GroupKnockoutTournament = TournamentBase & {
   knockout: EliminationBracket | null;
 };
 
+export type DoubleElimTournament = TournamentBase & {
+  format: "double-elim";
+  winnersBracket: EliminationBracket;
+  losersBracket: EliminationBracket;
+  grandFinals: EliminationBracket;
+};
+
 export type Tournament =
   | SingleElimTournament
   | SeriesTournament
-  | GroupKnockoutTournament;
+  | GroupKnockoutTournament
+  | DoubleElimTournament;
 
 export type BaseConfig = {
   name: string;
@@ -99,7 +111,12 @@ export type GroupKnockoutConfig = BaseConfig & {
   advancePerGroup: number;
 };
 
+export type DoubleElimConfig = BaseConfig & {
+  format: "double-elim";
+};
+
 export type TournamentConfig =
   | SingleElimConfig
   | SeriesConfig
-  | GroupKnockoutConfig;
+  | GroupKnockoutConfig
+  | DoubleElimConfig;

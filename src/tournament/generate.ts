@@ -1,4 +1,6 @@
 import type {
+  DoubleElimConfig,
+  DoubleElimTournament,
   GroupKnockoutConfig,
   GroupKnockoutTournament,
   SeriesConfig,
@@ -11,6 +13,7 @@ import type {
 import { generateGroupKnockout } from "./formats/groupKnockout";
 import { generateSeriesBracket } from "./formats/seriesBracket";
 import { generateSingleElim } from "./formats/singleElim";
+import { generateDoubleElim } from "./formats/doubleElim";
 
 export function generateTournament(
   config: SingleElimConfig,
@@ -19,6 +22,9 @@ export function generateTournament(config: SeriesConfig): SeriesTournament;
 export function generateTournament(
   config: GroupKnockoutConfig,
 ): GroupKnockoutTournament;
+export function generateTournament(
+  config: DoubleElimConfig,
+): DoubleElimTournament;
 export function generateTournament(config: TournamentConfig): Tournament;
 export function generateTournament(config: TournamentConfig): Tournament {
   switch (config.format) {
@@ -28,5 +34,7 @@ export function generateTournament(config: TournamentConfig): Tournament {
       return generateSeriesBracket(config);
     case "group-knockout":
       return generateGroupKnockout(config);
+    case "double-elim":
+      return generateDoubleElim(config);
   }
 }

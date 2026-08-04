@@ -9,6 +9,7 @@ const TABS: { format: TournamentFormat; label: string }[] = [
   { format: "single-elim", label: "Single Elimination" },
   { format: "series-bracket", label: "Series" },
   { format: "group-knockout", label: "Group Stage" },
+  { format: "double-elim", label: "Double Elimination" },
 ];
 
 export function Navbar({ active, onSelect }: NavbarProps) {
