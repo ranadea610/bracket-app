@@ -1,4 +1,5 @@
 import { ParticipantSlotList } from "./ParticipantSlotList";
+import { ParticipantPasteImport } from "./ParticipantPasteImport";
 import type { ParticipantSlot } from "./slots";
 
 export type ParticipantGroup = {
@@ -22,11 +23,42 @@ export function GroupedParticipantList({
     onChange(next);
   };
 
+  // Distributes a single flat list of names sequentially across the groups,
+  // in the same order they're already flattened at submission time (group 0
+  // gets the first group0.length names, group 1 the next group1.length, etc).
+  const handleExtract = (names: string[]) => {
+    let cursor = 0;
+    const next = groups.map((group) => {
+      const count = group.participants.length;
+      const slice = names.slice(cursor, cursor + count);
+      cursor += count;
+
+      return {
+        ...group,
+        participants: group.participants.map((slot, i) => ({
+          ...slot,
+          name: slice[i] ?? "",
+        })),
+      };
+    });
+    onChange(next);
+  };
+
+  const expectedCount = groups.reduce((sum, g) => sum + g.participants.length, 0);
+
   return (
     <div>
       <h3 className="text-sm font-medium text-slate-300 mb-2">
         Participants (grouped, in seed order)
       </h3>
+
+      <div className="mb-3">
+        <ParticipantPasteImport
+          expectedCount={expectedCount}
+          onExtract={handleExtract}
+        />
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {groups.map((group, groupIndex) => (
           <div
