@@ -59,7 +59,17 @@ export function computeStandings(
     }
   }
 
-  return [...standings.values()].sort((a, b) => {
+  return sortStandings([...standings.values()]);
+}
+
+/**
+ * Points -> goal difference -> goals scored -> name -> stable/arbitrary.
+ * The single sort implementation used both for in-group standings and for
+ * ranking third-place teams across groups (World Cup-style), so they can
+ * never disagree.
+ */
+export function sortStandings(standings: GroupStanding[]): GroupStanding[] {
+  return [...standings].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
 
     const gdA = a.goalsFor - a.goalsAgainst;

@@ -1,7 +1,11 @@
 import type { Draft } from "./components/setup/draftTypes";
 import type { Tournament, TournamentFormat } from "./tournament/types";
 
-const STORAGE_KEY = "bracket-app:state-v1";
+// Bump this whenever the Draft/Tournament shape changes in a
+// backwards-incompatible way, so old localStorage data is cleanly ignored
+// instead of crashing the app on load (see ErrorBoundary.tsx for the
+// last-resort safety net if that ever happens anyway).
+const STORAGE_KEY = "bracket-app:state-v2";
 
 export type PersistedState = {
   activeFormat: TournamentFormat;

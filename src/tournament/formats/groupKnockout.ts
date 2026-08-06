@@ -4,14 +4,28 @@ import type {
   GroupKnockoutConfig,
   GroupKnockoutTournament,
   GroupStage,
+  GroupStanding,
 } from "../types";
 import {
   buildEliminationRounds,
   generateRoundRobin,
   isPowerOfTwo,
   toParticipants,
+  withRoundNames,
 } from "./shared";
-import { computeStandings } from "../groupStandings";
+import { computeStandings, sortStandings } from "../groupStandings";
+import { reseedForBracket } from "./seeding";
+
+const WORLD_CUP_GROUP_SIZE = 4;
+const WORLD_CUP_ADVANCE_PER_GROUP = 2;
+const WORLD_CUP_THIRD_PLACE_ADVANCERS = 8;
+const WORLD_CUP_KNOCKOUT_ROUND_NAMES = [
+  "Round of 32",
+  "Round of 16",
+  "Quarterfinals",
+  "Semifinals",
+  "Final",
+];
 
 export function groupName(index: number): string {
   // A, B, C, ... Z, AA, AB, ...
@@ -27,7 +41,16 @@ export function groupName(index: number): string {
 export function generateGroupKnockout(
   config: GroupKnockoutConfig,
 ): GroupKnockoutTournament {
-  const { participants: names, groupSize, advancePerGroup } = config;
+  const isWorldCup = config.groupFormat === "world-cup";
+  const groupSize = isWorldCup ? WORLD_CUP_GROUP_SIZE : config.groupSize;
+  const advancePerGroup = isWorldCup
+    ? WORLD_CUP_ADVANCE_PER_GROUP
+    : config.advancePerGroup;
+  const thirdPlaceAdvancers = isWorldCup
+    ? WORLD_CUP_THIRD_PLACE_ADVANCERS
+    : undefined;
+
+  const names = config.participants;
 
   if (names.length % groupSize !== 0) {
     throw new Error(
@@ -35,11 +58,13 @@ export function generateGroupKnockout(
     );
   }
 
-  const totalAdvancers = (names.length / groupSize) * advancePerGroup;
-  if (!isPowerOfTwo(totalAdvancers)) {
-    throw new Error(
-      `Total advancers (${totalAdvancers}) across all groups must be a power of 2 to seed a knockout bracket.`,
-    );
+  if (!thirdPlaceAdvancers) {
+    const totalAdvancers = (names.length / groupSize) * advancePerGroup;
+    if (!isPowerOfTwo(totalAdvancers)) {
+      throw new Error(
+        `Total advancers (${totalAdvancers}) across all groups must be a power of 2 to seed a knockout bracket.`,
+      );
+    }
   }
 
   const participants = toParticipants(names);
@@ -58,7 +83,7 @@ export function generateGroupKnockout(
     });
   }
 
-  const groupStage: GroupStage = { groups, advancePerGroup };
+  const groupStage: GroupStage = { groups, advancePerGroup, thirdPlaceAdvancers };
 
   return {
     id: crypto.randomUUID(),
@@ -74,18 +99,35 @@ export function generateGroupKnockout(
 /**
  * Seeds a knockout bracket from the current standings of a group stage.
  * Takes the top `advancePerGroup` participants from each group, in group
- * order. `group.standings` is always kept sorted (see computeStandings in
- * groupStandings.ts), so this is just a slice. Throws if group play hasn't
- * produced a valid power-of-2 field of advancers.
+ * order (`group.standings` is always kept sorted -- see computeStandings in
+ * groupStandings.ts -- so this is just a slice). World Cup-style stages also
+ * add `thirdPlaceAdvancers` more, ranked across every group's 3rd-place
+ * finisher, and reseed the combined field into standard bracket order (the
+ * default mode keeps its original adjacent-pairing seeding, unchanged).
+ * Throws if group play hasn't produced a valid power-of-2 field of advancers.
  */
 export function generateKnockoutFromGroups(
   groupStage: GroupStage,
 ): EliminationBracket {
-  const advancers = groupStage.groups.flatMap((group) =>
+  const autoAdvancers = groupStage.groups.flatMap((group) =>
     group.standings
       .slice(0, groupStage.advancePerGroup)
       .map((standing) => standing.participant),
   );
+
+  let advancers = autoAdvancers;
+
+  if (groupStage.thirdPlaceAdvancers) {
+    const thirdPlaceStandings = groupStage.groups
+      .map((group) => group.standings[groupStage.advancePerGroup])
+      .filter((standing): standing is GroupStanding => Boolean(standing));
+
+    const rankedThirds = sortStandings(thirdPlaceStandings)
+      .slice(0, groupStage.thirdPlaceAdvancers)
+      .map((standing) => standing.participant);
+
+    advancers = [...autoAdvancers, ...rankedThirds];
+  }
 
   if (!isPowerOfTwo(advancers.length)) {
     throw new Error(
@@ -93,5 +135,15 @@ export function generateKnockoutFromGroups(
     );
   }
 
-  return { rounds: buildEliminationRounds(advancers) };
+  if (!groupStage.thirdPlaceAdvancers) {
+    return { rounds: buildEliminationRounds(advancers) };
+  }
+
+  const seeded = reseedForBracket(advancers);
+  return {
+    rounds: withRoundNames(
+      buildEliminationRounds(seeded),
+      WORLD_CUP_KNOCKOUT_ROUND_NAMES,
+    ),
+  };
 }

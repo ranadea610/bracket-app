@@ -36,8 +36,11 @@ export function GroupStageView({
         Group Stage
       </h2>
       <p className="text-sm text-slate-400 mb-4">
-        Top {groupStage.advancePerGroup} from each group advance to the
-        knockout bracket. Click a group to enter match results.
+        Top {groupStage.advancePerGroup} from each group
+        {groupStage.thirdPlaceAdvancers
+          ? `, plus the ${groupStage.thirdPlaceAdvancers} best third-place teams,`
+          : ""}{" "}
+        advance to the knockout bracket. Click a group to enter match results.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

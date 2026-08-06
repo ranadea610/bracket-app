@@ -52,6 +52,9 @@ export type Group = {
 export type GroupStage = {
   groups: Group[];
   advancePerGroup: number;
+  // World Cup-style: this many additional advancers, ranked across all
+  // groups' 3rd-place finishers, on top of advancePerGroup per group.
+  thirdPlaceAdvancers?: number;
 };
 
 export type TournamentBase = {
@@ -96,20 +99,57 @@ export type BaseConfig = {
   participants: string[];
 };
 
-export type SingleElimConfig = BaseConfig & {
+export type DefaultSingleElimConfig = BaseConfig & {
   format: "single-elim";
+  bracketFormat: "default";
 };
 
-export type SeriesConfig = BaseConfig & {
+export type MarchMadnessConfig = BaseConfig & {
+  format: "single-elim";
+  bracketFormat: "march-madness";
+};
+
+export type SingleElimConfig = DefaultSingleElimConfig | MarchMadnessConfig;
+
+export type DefaultSeriesConfig = BaseConfig & {
   format: "series-bracket";
+  seriesFormat: "default";
   bestOf: number;
 };
 
-export type GroupKnockoutConfig = BaseConfig & {
+export type NbaPlayoffsConfig = BaseConfig & {
+  format: "series-bracket";
+  seriesFormat: "nba-playoffs";
+};
+
+export type WttSeriesFormat =
+  | "wtt-star-contender"
+  | "wtt-champions"
+  | "wtt-grand-smash";
+
+export type WttSeriesConfig = BaseConfig & {
+  format: "series-bracket";
+  seriesFormat: WttSeriesFormat;
+};
+
+export type SeriesConfig =
+  | DefaultSeriesConfig
+  | NbaPlayoffsConfig
+  | WttSeriesConfig;
+
+export type DefaultGroupKnockoutConfig = BaseConfig & {
   format: "group-knockout";
+  groupFormat: "default";
   groupSize: number;
   advancePerGroup: number;
 };
+
+export type WorldCupConfig = BaseConfig & {
+  format: "group-knockout";
+  groupFormat: "world-cup";
+};
+
+export type GroupKnockoutConfig = DefaultGroupKnockoutConfig | WorldCupConfig;
 
 export type DoubleElimConfig = BaseConfig & {
   format: "double-elim";

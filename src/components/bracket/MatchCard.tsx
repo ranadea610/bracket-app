@@ -20,7 +20,9 @@ export function MatchCard({ match, top, left, onOpenResultModal }: MatchCardProp
 
   const row = (participant: Participant | undefined, score: number | undefined) => (
     <div className={`flex items-center justify-between gap-2 text-sm ${nameClass(participant)}`}>
-      <span className="truncate">{participant?.name || "TBD"}</span>
+      <span className="truncate">
+        {participant?.name || (match.winner ? "BYE" : "TBD")}
+      </span>
       {score !== undefined && (
         <span className="shrink-0 text-slate-300">{score}</span>
       )}
