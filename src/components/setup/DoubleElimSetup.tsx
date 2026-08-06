@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { NumberDropdown } from "../NumberDropdown";
 import { TournamentNameInput } from "../TournamentNameInput";
 import { TournamentDescriptionInput } from "../TournamentDescriptionInput";
 import { ParticipantList } from "../participants/ParticipantList";
 import { createParticipantSlots } from "../participants/slots";
-import type { DoubleElimConfig } from "../../tournament/types";
+import { BracketPreview } from "../bracket/BracketPreview";
+import type { DoubleElimConfig, EliminationBracket } from "../../tournament/types";
+import { generateDoubleElim } from "../../tournament/formats/doubleElim";
 import type { DoubleElimDraft } from "./draftTypes";
 
 const SIZES = [4, 8, 16, 32, 64, 128, 256];
@@ -21,6 +24,7 @@ export function DoubleElimSetup({
   onSubmit,
   error,
 }: DoubleElimSetupProps) {
+  const [showPreview, setShowPreview] = useState(false);
   const { name, size, description, participants } = draft;
 
   const allNamed =
@@ -36,6 +40,29 @@ export function DoubleElimSetup({
       description: description.trim() || undefined,
       participants: participants.map((p) => p.name.trim()),
     });
+  };
+
+  const flatNames = participants.map(
+    (p, i) => p.name.trim() || `Participant ${i + 1}`,
+  );
+
+  let previewBracket: EliminationBracket | null = null;
+  if (showPreview && flatNames.length > 0) {
+    try {
+      previewBracket = generateDoubleElim({
+        format: "double-elim",
+        name: "",
+        participants: flatNames,
+      }).winnersBracket;
+    } catch {
+      previewBracket = null;
+    }
+  }
+
+  const handleSwapSeeds = (seedA: number, seedB: number) => {
+    const next = [...participants];
+    [next[seedA - 1], next[seedB - 1]] = [next[seedB - 1], next[seedA - 1]];
+    onDraftChange({ ...draft, participants: next });
   };
 
   return (
@@ -56,10 +83,28 @@ export function DoubleElimSetup({
 
       {size && (
         <>
-          <ParticipantList
-            participants={participants}
-            onChange={(participants) => onDraftChange({ ...draft, participants })}
-          />
+          <button
+            type="button"
+            onClick={() => setShowPreview((v) => !v)}
+            className="text-sm text-indigo-400 hover:text-indigo-300 cursor-pointer"
+          >
+            {showPreview ? "Hide Bracket Preview" : "Show Bracket Preview"}
+          </button>
+
+          <div className={showPreview ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : ""}>
+            <div>
+              <ParticipantList
+                participants={participants}
+                onChange={(participants) => onDraftChange({ ...draft, participants })}
+              />
+            </div>
+
+            {showPreview && (
+              <div>
+                <BracketPreview bracket={previewBracket} onSwapSeeds={handleSwapSeeds} />
+              </div>
+            )}
+          </div>
 
           <TournamentDescriptionInput
             value={description}

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { OptionDropdown } from "../OptionDropdown";
 import { NumberDropdown } from "../NumberDropdown";
 import { TournamentNameInput } from "../TournamentNameInput";
@@ -5,7 +6,10 @@ import { TournamentDescriptionInput } from "../TournamentDescriptionInput";
 import { ParticipantList } from "../participants/ParticipantList";
 import { GroupedParticipantList } from "../participants/GroupedParticipantList";
 import { createParticipantSlots } from "../participants/slots";
-import type { SingleElimConfig } from "../../tournament/types";
+import { resolveGroupSlot } from "../participants/groupSlot";
+import { BracketPreview } from "../bracket/BracketPreview";
+import type { EliminationBracket, SingleElimConfig } from "../../tournament/types";
+import { generateSingleElim } from "../../tournament/formats/singleElim";
 import { buildMarchMadnessGroups, type SingleElimDraft } from "./draftTypes";
 
 const SIZES = [4, 8, 16, 32, 64, 128, 256];
@@ -28,6 +32,7 @@ export function SingleElimSetup({
   onSubmit,
   error,
 }: SingleElimSetupProps) {
+  const [showPreview, setShowPreview] = useState(false);
   const { name, description } = draft;
 
   const handleFormatChange = (bracketFormat: "default" | "march-madness") => {
@@ -89,6 +94,46 @@ export function SingleElimSetup({
     (draft.bracketFormat === "default" && draft.size) ||
     draft.bracketFormat === "march-madness";
 
+  const rawFlatNames =
+    draft.bracketFormat === "default"
+      ? draft.participants.map((p) => p.name.trim())
+      : draft.groups.flatMap((g) => g.participants.map((p) => p.name.trim()));
+  const flatNames = rawFlatNames.map((name, i) => name || `Participant ${i + 1}`);
+
+  let previewBracket: EliminationBracket | null = null;
+  if (showPreview && flatNames.length > 0) {
+    try {
+      previewBracket = generateSingleElim({
+        format: "single-elim",
+        bracketFormat: draft.bracketFormat,
+        name: "",
+        participants: flatNames,
+      }).bracket;
+    } catch {
+      previewBracket = null;
+    }
+  }
+
+  const handleSwapSeeds = (seedA: number, seedB: number) => {
+    if (draft.bracketFormat === "default") {
+      const next = [...draft.participants];
+      [next[seedA - 1], next[seedB - 1]] = [next[seedB - 1], next[seedA - 1]];
+      onDraftChange({ ...draft, participants: next });
+    } else {
+      const a = resolveGroupSlot(draft.groups, seedA - 1);
+      const b = resolveGroupSlot(draft.groups, seedB - 1);
+      const nextGroups = draft.groups.map((g) => ({
+        ...g,
+        participants: [...g.participants],
+      }));
+      const temp = nextGroups[a.groupIndex].participants[a.slotIndex];
+      nextGroups[a.groupIndex].participants[a.slotIndex] =
+        nextGroups[b.groupIndex].participants[b.slotIndex];
+      nextGroups[b.groupIndex].participants[b.slotIndex] = temp;
+      onDraftChange({ ...draft, groups: nextGroups });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <TournamentNameInput
@@ -122,17 +167,35 @@ export function SingleElimSetup({
 
       {readyForParticipants && (
         <>
-          {draft.bracketFormat === "default" ? (
-            <ParticipantList
-              participants={draft.participants}
-              onChange={(participants) => onDraftChange({ ...draft, participants })}
-            />
-          ) : (
-            <GroupedParticipantList
-              groups={draft.groups}
-              onChange={(groups) => onDraftChange({ ...draft, groups })}
-            />
-          )}
+          <button
+            type="button"
+            onClick={() => setShowPreview((v) => !v)}
+            className="text-sm text-indigo-400 hover:text-indigo-300 cursor-pointer"
+          >
+            {showPreview ? "Hide Bracket Preview" : "Show Bracket Preview"}
+          </button>
+
+          <div className={showPreview ? "grid grid-cols-1 lg:grid-cols-2 gap-6" : ""}>
+            <div>
+              {draft.bracketFormat === "default" ? (
+                <ParticipantList
+                  participants={draft.participants}
+                  onChange={(participants) => onDraftChange({ ...draft, participants })}
+                />
+              ) : (
+                <GroupedParticipantList
+                  groups={draft.groups}
+                  onChange={(groups) => onDraftChange({ ...draft, groups })}
+                />
+              )}
+            </div>
+
+            {showPreview && (
+              <div>
+                <BracketPreview bracket={previewBracket} onSwapSeeds={handleSwapSeeds} />
+              </div>
+            )}
+          </div>
 
           <TournamentDescriptionInput
             value={description}

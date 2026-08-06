@@ -1,5 +1,5 @@
-import type { Round } from "../../tournament/types";
-import { MatchCard } from "./MatchCard";
+import type { ReactNode } from "react";
+import type { Match, Round } from "../../tournament/types";
 import {
   getMatchCenterY,
   getRoundX,
@@ -14,7 +14,7 @@ type RoundColumnProps = {
   round0MatchCount: number;
   canvasHeight: number;
   onSelectRound: (roundIndex: number) => void;
-  onOpenResultModal: (roundIndex: number, matchIndex: number) => void;
+  renderMatch: (match: Match, roundIndex: number, matchIndex: number, top: number) => ReactNode;
 };
 
 export function RoundColumn({
@@ -23,7 +23,7 @@ export function RoundColumn({
   round0MatchCount,
   canvasHeight,
   onSelectRound,
-  onOpenResultModal,
+  renderMatch,
 }: RoundColumnProps) {
   return (
     <div
@@ -46,14 +46,11 @@ export function RoundColumn({
           round0MatchCount,
         );
 
-        return (
-          <MatchCard
-            key={match.id}
-            match={match}
-            left={0}
-            top={HEADER_HEIGHT + centerY - MATCH_HEIGHT / 2}
-            onOpenResultModal={() => onOpenResultModal(roundIndex, matchIndex)}
-          />
+        return renderMatch(
+          match,
+          roundIndex,
+          matchIndex,
+          HEADER_HEIGHT + centerY - MATCH_HEIGHT / 2,
         );
       })}
     </div>

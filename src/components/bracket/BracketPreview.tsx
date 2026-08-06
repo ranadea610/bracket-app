@@ -1,35 +1,26 @@
-import { useState } from "react";
-import type { EliminationBracket, Participant } from "../tournament/types";
-import { BracketCanvas } from "./bracket/BracketCanvas";
-import { MatchCard } from "./bracket/MatchCard";
-import { MatchResultModal } from "./bracket/MatchResultModal";
-import { SeriesResultModal } from "./bracket/SeriesResultModal";
-import { useBracketNavigation } from "./bracket/useBracketNavigation";
+import type { EliminationBracket } from "../../tournament/types";
+import { BracketCanvas } from "./BracketCanvas";
+import { MatchCard } from "./MatchCard";
+import { PreviewMatchCard } from "./PreviewMatchCard";
+import { useBracketNavigation } from "./useBracketNavigation";
 
-type BracketViewProps = {
-  bracket: EliminationBracket;
-  onSetWinner: (
-    roundIndex: number,
-    matchIndex: number,
-    winner: Participant,
-    score?: { participant1: number; participant2: number },
-  ) => void;
+type BracketPreviewProps = {
+  bracket: EliminationBracket | null;
+  onSwapSeeds: (seedA: number, seedB: number) => void;
 };
 
-export function BracketView({ bracket, onSetWinner }: BracketViewProps) {
-  const rounds = bracket.rounds;
+export function BracketPreview({ bracket, onSwapSeeds }: BracketPreviewProps) {
+  const rounds = bracket?.rounds ?? [];
   const { scale, currentRoundIndex, roundCount, scrollRef, goToRound, handleZoom, handleFit } =
     useBracketNavigation(rounds);
-  const [activeModal, setActiveModal] = useState<{
-    roundIndex: number;
-    matchIndex: number;
-  } | null>(null);
+
+  if (!bracket) return null;
 
   return (
-    <div className="mt-6">
-      <h2 className="text-lg font-semibold text-slate-100 mb-4">
-        Tournament Bracket
-      </h2>
+    <div>
+      <h3 className="text-sm font-medium text-slate-300 mb-2">
+        Bracket preview — drag a name to reseed
+      </h3>
 
       <div className="mb-3 flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2">
@@ -66,7 +57,7 @@ export function BracketView({ bracket, onSetWinner }: BracketViewProps) {
             onClick={() => goToRound(currentRoundIndex - 1)}
             className="rounded-lg border border-slate-700 px-3 py-1 text-sm text-slate-200 hover:border-indigo-400 disabled:opacity-40 disabled:hover:border-slate-700 cursor-pointer disabled:cursor-not-allowed"
           >
-            ◀ Prev round
+            ◀
           </button>
           <span className="text-sm text-slate-400">
             Round {currentRoundIndex + 1} of {roundCount}
@@ -77,7 +68,7 @@ export function BracketView({ bracket, onSetWinner }: BracketViewProps) {
             onClick={() => goToRound(currentRoundIndex + 1)}
             className="rounded-lg border border-slate-700 px-3 py-1 text-sm text-slate-200 hover:border-indigo-400 disabled:opacity-40 disabled:hover:border-slate-700 cursor-pointer disabled:cursor-not-allowed"
           >
-            Next round ▶
+            ▶
           </button>
         </div>
       </div>
@@ -87,43 +78,20 @@ export function BracketView({ bracket, onSetWinner }: BracketViewProps) {
         rounds={rounds}
         scale={scale}
         onSelectRound={goToRound}
-        renderMatch={(match, roundIndex, matchIndex, top) => (
-          <MatchCard
-            key={match.id}
-            match={match}
-            left={0}
-            top={top}
-            onOpenResultModal={() => setActiveModal({ roundIndex, matchIndex })}
-          />
-        )}
-      />
-
-      {activeModal &&
-        (() => {
-          const match =
-            rounds[activeModal.roundIndex].matches[activeModal.matchIndex];
-          const handleSubmit = (
-            winner: Participant,
-            score: { participant1: number; participant2: number },
-          ) => {
-            onSetWinner(activeModal.roundIndex, activeModal.matchIndex, winner, score);
-            setActiveModal(null);
-          };
-
-          return match.bestOf ? (
-            <SeriesResultModal
+        renderMatch={(match, roundIndex, _matchIndex, top) =>
+          roundIndex === 0 ? (
+            <PreviewMatchCard
+              key={match.id}
               match={match}
-              onClose={() => setActiveModal(null)}
-              onSubmit={handleSubmit}
+              left={0}
+              top={top}
+              onSwapSeeds={onSwapSeeds}
             />
           ) : (
-            <MatchResultModal
-              match={match}
-              onClose={() => setActiveModal(null)}
-              onSubmit={handleSubmit}
-            />
-          );
-        })()}
+            <MatchCard key={match.id} match={match} left={0} top={top} />
+          )
+        }
+      />
     </div>
   );
 }
