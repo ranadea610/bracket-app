@@ -65,6 +65,7 @@ export function AuthModal({ initialMode, onClose }: AuthModalProps) {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             autoFocus
+            autoComplete="username"
             className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-400"
           />
           <p className="mt-1 text-xs text-slate-500">
@@ -80,6 +81,7 @@ export function AuthModal({ initialMode, onClose }: AuthModalProps) {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
             className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:border-indigo-400"
           />
           <p className="mt-1 text-xs text-slate-500">8–30 characters</p>
