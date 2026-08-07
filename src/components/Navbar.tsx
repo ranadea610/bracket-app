@@ -1,8 +1,13 @@
 import type { TournamentFormat } from "../tournament/types";
+import type { AuthUser } from "../auth/types";
 
 type NavbarProps = {
   active: TournamentFormat;
   onSelect: (format: TournamentFormat) => void;
+  user: AuthUser | null;
+  onSignUp: () => void;
+  onLogIn: () => void;
+  onLogOut: () => void;
 };
 
 const TABS: { format: TournamentFormat; label: string }[] = [
@@ -12,7 +17,7 @@ const TABS: { format: TournamentFormat; label: string }[] = [
   { format: "double-elim", label: "Double Elimination" },
 ];
 
-export function Navbar({ active, onSelect }: NavbarProps) {
+export function Navbar({ active, onSelect, user, onSignUp, onLogIn, onLogOut }: NavbarProps) {
   return (
     <header className="border-b border-slate-800">
       <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-6">
@@ -36,6 +41,38 @@ export function Navbar({ active, onSelect }: NavbarProps) {
             </button>
           ))}
         </nav>
+
+        <div className="flex items-center gap-3 whitespace-nowrap">
+          {user ? (
+            <>
+              <span className="text-sm text-slate-300">{user.username}</span>
+              <button
+                type="button"
+                onClick={onLogOut}
+                className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:border-indigo-400 transition-colors cursor-pointer"
+              >
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={onLogIn}
+                className="text-sm text-slate-300 hover:text-slate-100 cursor-pointer"
+              >
+                Log In
+              </button>
+              <button
+                type="button"
+                onClick={onSignUp}
+                className="rounded-lg bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-400 transition-colors cursor-pointer"
+              >
+                Sign Up
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

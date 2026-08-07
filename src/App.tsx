@@ -18,6 +18,8 @@ import {
   type DoubleElimBracketKind,
 } from "./tournament/doubleElimAdvance";
 import { loadPersistedState, savePersistedState } from "./persistence";
+import { useAuth } from "./auth/AuthContext";
+import { AuthModal } from "./components/auth/AuthModal";
 import type {
   EliminationBracket,
   Participant,
@@ -30,6 +32,9 @@ function App() {
   // =======================
   // STATE
   // =======================
+
+  const { user, signOut } = useAuth();
+  const [authModalMode, setAuthModalMode] = useState<"sign-up" | "log-in" | null>(null);
 
   const [persisted] = useState(() => loadPersistedState());
 
@@ -216,7 +221,14 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <Navbar active={activeFormat} onSelect={handleSelectTab} />
+      <Navbar
+        active={activeFormat}
+        onSelect={handleSelectTab}
+        user={user}
+        onSignUp={() => setAuthModalMode("sign-up")}
+        onLogIn={() => setAuthModalMode("log-in")}
+        onLogOut={signOut}
+      />
 
       <main className="max-w-4xl mx-auto px-6 py-8">
         {/* =======================
@@ -368,6 +380,13 @@ function App() {
 
       {champion && (
         <ChampionModal champion={champion} onClose={() => setChampion(null)} />
+      )}
+
+      {authModalMode && (
+        <AuthModal
+          initialMode={authModalMode}
+          onClose={() => setAuthModalMode(null)}
+        />
       )}
     </div>
   );
