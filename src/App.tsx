@@ -20,6 +20,9 @@ import {
 import { loadPersistedState, savePersistedState } from "./persistence";
 import { useAuth } from "./auth/AuthContext";
 import { AuthModal } from "./components/auth/AuthModal";
+import { MyBracketsRail } from "./components/brackets/MyBracketsRail";
+import { saveBracket } from "./brackets/bracketsApi";
+import type { SavedBracket } from "./brackets/types";
 import type {
   EliminationBracket,
   Participant,
@@ -53,6 +56,10 @@ function App() {
   );
   const [error, setError] = useState<string | null>(null);
   const [champion, setChampion] = useState<Participant | null>(null);
+
+  const [justSaved, setJustSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [bracketsRefreshToken, setBracketsRefreshToken] = useState(0);
 
   const tournament = tournaments[activeFormat] ?? null;
   const draft = drafts[activeFormat] ?? createEmptyDraft(activeFormat);
@@ -100,6 +107,28 @@ function App() {
   const handleReset = () => {
     setTournament(null);
     setError(null);
+  };
+
+  const handleSaveBracket = async () => {
+    if (!tournament || !user) return;
+
+    setSaveError(null);
+    const result = await saveBracket(user.id, tournament);
+
+    if (result.error) {
+      setSaveError(result.error);
+    } else {
+      setJustSaved(true);
+      setBracketsRefreshToken((n) => n + 1);
+      setTimeout(() => setJustSaved(false), 2000);
+    }
+  };
+
+  const handleLoadBracket = (saved: SavedBracket) => {
+    setTournaments((prev) => ({ ...prev, [saved.format]: saved.tournament }));
+    setActiveFormat(saved.format);
+    setError(null);
+    setChampion(null);
   };
 
   const handleSetWinner = (
@@ -221,6 +250,14 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
+      {user && (
+        <MyBracketsRail
+          user={user}
+          onLoadBracket={handleLoadBracket}
+          refreshToken={bracketsRefreshToken}
+        />
+      )}
+
       <Navbar
         active={activeFormat}
         onSelect={handleSelectTab}
@@ -288,14 +325,33 @@ function App() {
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={handleReset}
-                className="shrink-0 rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:border-indigo-400 transition-colors cursor-pointer"
-              >
-                Reset
-              </button>
+              <div className="flex shrink-0 items-center gap-3">
+                {user && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveBracket}
+                      className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:border-indigo-400 transition-colors cursor-pointer"
+                    >
+                      Save to My Brackets
+                    </button>
+                    {justSaved && (
+                      <span className="text-sm text-emerald-400">Saved ✓</span>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:border-indigo-400 transition-colors cursor-pointer"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
+
+            {saveError && <p className="mb-4 text-sm text-red-400">{saveError}</p>}
 
             {(tournament.format === "single-elim" ||
               tournament.format === "series-bracket") && (
